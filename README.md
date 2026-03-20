@@ -58,7 +58,7 @@ cp .env.example .env
 Для первого запуска выполните сборку:
 
 ```bash
-docker compose up --build
+docker compose up --build -d
 ```
 
 Дальше можно запускать без пересборки:
