@@ -1,0 +1,72 @@
+services:
+  db:
+    image: postgres:15
+    container_name: blog_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-blog}
+    ports:
+      - "${POSTGRES_HOST_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  db_tests:
+    image: postgres:15
+    container_name: blog_db_tests
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB_TEST:-blog_test}
+    ports:
+      - "${POSTGRES_TEST_HOST_PORT:-5433}:5432"
+    volumes:
+      - postgres_data_tests:/var/lib/postgresql/data
+    profiles:
+      - tests
+
+  redis:
+    image: redis:7
+    container_name: blog_redis
+    restart: always
+    ports:
+      - "${REDIS_HOST_PORT:-6379}:6379"
+
+  app:
+    build: .
+    container_name: blog_app
+    restart: always
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "${APP_HOST_PORT:-8000}:8000"
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+
+  tests:
+    build: .
+    container_name: blog_tests
+    command: pytest
+    working_dir: /app
+    depends_on:
+      - db_tests
+      - redis
+    env_file:
+      - .env
+    environment:
+      PYTHONPATH: /app
+      REDIS_URL: ${REDIS_URL_TEST}
+      DATABASE_URL: ${DATABASE_URL_TEST}
+    volumes:
+      - .:/app
+    profiles:
+      - tests
+
+volumes:
+  postgres_data:
+  postgres_data_tests:
